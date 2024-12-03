@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::collections::HashSet;
 use std::env;
 use std::fs;
@@ -26,7 +25,7 @@ fn main() {
     let reader = io::BufReader::new(contents);
 
     let list: Vec<String> = reader.lines().map_while(Result::ok).collect();
-    let mut number_list: Vec<Vec<i32>> = list
+    let number_list: Vec<Vec<i32>> = list
         .iter()
         .map(|line| {
             line.split(' ')
@@ -38,38 +37,21 @@ fn main() {
     // println!("Number List: {:?}", number_list);
 
     if part == "part1" {
-        let distances: Vec<Vec<i32>> = number_list
+        let safe_list: Vec<bool> = number_list
             .iter()
             .map(|vector| {
+                let mut sorted = vector.clone();
+                sorted.sort();
+                let mut reverse_sorted = sorted.clone();
+                reverse_sorted.reverse();
                 vector
                     .windows(2)
                     .map(|window| window[0] - window[1])
-                    .collect()
+                    .all(|x| (1..=3).contains(&x.abs()))
+                    && (sorted == *vector || reverse_sorted == *vector)
             })
             .collect();
-        // println!("Distances: {:?}", distances);
-        let condition_diff: Vec<bool> = distances
-            .iter()
-            .map(|v| v.iter().all(|x| (x.abs() <= 3 && x.abs() >= 1)))
-            .collect();
-        // println!("Amplitude: {:?}", condition_diff);
-        let all_decrease: Vec<bool> = distances.iter().map(|v| v.iter().all(|x| *x < 0)).collect();
-        let all_increase: Vec<bool> = distances.iter().map(|v| v.iter().all(|x| *x > 0)).collect();
-        // println!("all_decrease: {:?}", all_decrease);
-        // println!("all_increase: {:?}", all_increase);
-        let same_evol: Vec<bool> = all_decrease
-            .iter()
-            .zip(all_increase.iter())
-            .map(|(a, b)| (a | b))
-            .collect();
-        // println!("same_evol: {:?}", same_evol);
-        let all_cond: Vec<bool> = same_evol
-            .iter()
-            .zip(condition_diff.iter())
-            .map(|(a, b)| (a & b))
-            .collect();
-        // println!("all_cond: {:?}", all_cond);
-        let count_true = all_cond.iter().filter(|&&x| x).count();
+        let count_true = safe_list.iter().filter(|&&x| x).count();
         println!("Number of true values: {}", count_true);
     } else if part == "part2" {
     }
