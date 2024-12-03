@@ -54,5 +54,34 @@ fn main() {
         let count_true = safe_list.iter().filter(|&&x| x).count();
         println!("Number of true values: {}", count_true);
     } else if part == "part2" {
+        let safe_list: Vec<bool> = number_list
+            .iter()
+            .map(|vector| {
+                // Generate all combinations of vectors with one of its element removed
+                let mut results: Vec<Vec<i32>> = Vec::new();
+                for i in 0..vector.len() {
+                    let mut tmp = vector.clone();
+                    tmp.remove(i);
+                    results.push(tmp);
+                }
+                results
+            })
+            .map(|vector_vector| {
+                // For all the generated vectors, check if any passes the Safe conditions
+                vector_vector.iter().any(|vector| {
+                    let mut sorted = vector.clone();
+                    sorted.sort();
+                    let mut reverse_sorted = sorted.clone();
+                    reverse_sorted.reverse();
+                    vector
+                        .windows(2)
+                        .map(|window| window[0] - window[1])
+                        .all(|x| (1..=3).contains(&x.abs()))
+                        && (sorted == *vector || reverse_sorted == *vector)
+                })
+            })
+            .collect();
+        let count_true = safe_list.iter().filter(|&&x| x).count();
+        println!("Number of true values: {}", count_true);
     }
 }
