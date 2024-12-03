@@ -27,28 +27,39 @@ fn main() {
 
     let list: Vec<String> = reader.lines().map_while(Result::ok).collect();
 
-    let re = Regex::new(r"mul\((\d{1,3}),(\d{1,3})\)").unwrap();
+    // Join all lines into one large string
+    let mut all_lines = list.join("");
+    // println!("Before cleanup: {:?}", all_lines);
 
-    let mut all_all_captures: Vec<Vec<(i32, i32)>> = Vec::new();
+    // Regex to clean "dont't()...do()" blocks
+    if part == "part2" {
+        let re_do = Regex::new(r#"don't\(\).*?do\(\)"#).unwrap();
+        all_lines = re_do.replace_all(&all_lines, "").into_owned();
+        // println!("After cleanup: {:?}", all_lines);
+    }
 
-    (0..list.len()).for_each(|i| {
-        let all_line_captures: Vec<(i32, i32)> = re
-            .captures_iter(list[i].as_str()) // Get an iterator over all matches
-            .filter_map(|caps| {
-                let a = caps[1].parse::<i32>().ok(); // Parse the first capture group
-                let b = caps[2].parse::<i32>().ok(); // Parse the second capture group
-                a.zip(b) // Combine into a tuple if both are valid
-            })
-            .collect();
-        all_all_captures.push(all_line_captures);
-    });
-    let all_captures: Vec<(i32, i32)> = all_all_captures.into_iter().flatten().collect();
-    // println!("out {:?}", all_captures);
+    // Regex to capture valid "mul(...)" patterns
+    let re = Regex::new(r"mul\((\d+),(\d+)\)").unwrap();
+
+    // Extract all captures as tuples
+    let all_captures: Vec<(i32, i32)> = re
+        .captures_iter(&all_lines)
+        .filter_map(|caps| {
+            let a = caps[1].parse::<i32>().ok();
+            let b = caps[2].parse::<i32>().ok();
+            a.zip(b)
+        })
+        .collect();
 
     if part == "part1" {
+        // Calculate product of all valid pairs
         let mul_result: Vec<i32> = all_captures.iter().map(|(a, b)| a * b).collect();
         let res: i32 = mul_result.iter().sum();
-        println!("Result = {}", res);
+        println!("Part 1 Result = {}", res);
     } else if part == "part2" {
+        let mul_result: Vec<i32> = all_captures.iter().map(|(a, b)| a * b).collect();
+        let res: i32 = mul_result.iter().sum();
+        println!("Part 2 Result = {}", res);
     }
 }
+
