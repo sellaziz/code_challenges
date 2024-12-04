@@ -122,5 +122,29 @@ fn main() {
             .sum();
         println!("Solution Part 1: {}", result);
     } else if part == "part2" {
+        let mut count = 0;
+        let rows = list.len();
+        let cols = list[0].len();
+        for i in 1..rows - 1 {
+            for j in 1..cols - 1 {
+                let top_left = list[i - 1].chars().nth(j - 1 as usize).unwrap();
+                let center = list[i].chars().nth(j as usize).unwrap();
+                let bottom_right = list[i + 1].chars().nth(j + 1 as usize).unwrap();
+                let top_right = list[i - 1].chars().nth(j + 1 as usize).unwrap();
+                let bottom_left = list[i + 1].chars().nth(j - 1 as usize).unwrap();
+                let diagonal = format!("{}{}{}", top_left, center, bottom_right);
+                let anti_diagonal = format!("{}{}{}", top_right, center, bottom_left);
+                if diagonal == "MAS" && anti_diagonal == "MAS" {
+                    count += 1;
+                } else if diagonal == "SAM" && anti_diagonal == "SAM" {
+                    count += 1;
+                } else if diagonal == "MAS" && anti_diagonal == "SAM" {
+                    count += 1;
+                } else if diagonal == "SAM" && anti_diagonal == "MAS" {
+                    count += 1;
+                }
+            }
+        }
+        println!("Solution Part 2: {}", count);
     }
 }
