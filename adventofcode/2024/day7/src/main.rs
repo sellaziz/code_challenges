@@ -10,6 +10,7 @@ fn generate_combinations(
     idx: usize,
     current_result: u64,
     target: u64,
+    allow_concat: bool,
     found: &mut bool,
 ) {
     if idx == numbers.len() {
@@ -26,6 +27,7 @@ fn generate_combinations(
         idx + 1,
         current_result + numbers[idx],
         target,
+        allow_concat,
         found,
     );
 
@@ -35,8 +37,23 @@ fn generate_combinations(
         idx + 1,
         current_result * numbers[idx],
         target,
+        allow_concat,
         found,
     );
+
+    if allow_concat {
+        // Try concatenation
+        generate_combinations(
+            &numbers,
+            idx + 1,
+            format!("{}{}", current_result, numbers[idx])
+                .parse::<u64>()
+                .unwrap(),
+            target,
+            allow_concat,
+            found,
+        );
+    }
 }
 
 fn main() {
@@ -78,12 +95,21 @@ fn main() {
         let mut valid_eq: Vec<u64> = Vec::new();
         for (res, nums) in equations.iter() {
             let mut found = false;
-            generate_combinations(nums, 1, nums[0], *res, &mut found);
+            generate_combinations(nums, 1, nums[0], *res, false, &mut found);
             if found {
                 valid_eq.push(*res);
             }
         }
         println!("Solution Part1: {}", valid_eq.iter().sum::<u64>());
     } else if part == "part2" {
+        let mut valid_eq: Vec<u64> = Vec::new();
+        for (res, nums) in equations.iter() {
+            let mut found = false;
+            generate_combinations(nums, 1, nums[0], *res, true, &mut found);
+            if found {
+                valid_eq.push(*res);
+            }
+        }
+        println!("Solution Part2: {}", valid_eq.iter().sum::<u64>());
     }
 }
