@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use std::collections::HashSet;
 use std::env;
 use std::fs;
@@ -6,6 +5,23 @@ use std::io;
 use std::io::BufRead;
 use std::process::exit;
 
+fn reorder_list(input_vector: Vec<Vec<i32>>, ordering_rules: Vec<(i32, i32)>) -> Vec<Vec<i32>> {
+    let mut reordered_vector: Vec<Vec<i32>> = Vec::new();
+    for vector in input_vector.iter() {
+        let mut reordered = vector.clone();
+        for i in (1..reordered.len()).rev() {
+            for j in 0..i {
+                for (first, second) in ordering_rules.iter() {
+                    if reordered[j + 1] == *first && reordered[j] == *second {
+                        reordered.swap(j, j + 1);
+                    }
+                }
+            }
+        }
+        reordered_vector.push(reordered);
+    }
+    reordered_vector
+}
 fn main() {
     let args: Vec<String> = env::args().collect();
     let valid_args: HashSet<&str> = ["part1", "part2"].iter().cloned().collect();
@@ -120,51 +136,8 @@ fn main() {
             .zip(updates.iter())
             .filter_map(|(cond, vec)| if !*cond { Some(vec.clone()) } else { None })
             .collect();
-        // Generate all permutations and find the one that is valid
-        let reordered_vector: Vec<Vec<i32>> = unvalid_vector
-            .iter()
-            .map(|vector| {
-                vector
-                    .iter()
-                    .permutations(vector.len())
-                    .map(|perm| perm.into_iter().cloned().collect())
-                    .collect()
-            })
-            .map(|vectors: Vec<Vec<i32>>| {
-                vectors
-                    .iter()
-                    .filter(|&vector| {
-                        let mut pairs: Vec<(i32, i32)> = Vec::new();
-                        for i in 0..vector.len() {
-                            for j in i + 1..vector.len() {
-                                pairs.push((vector[i], vector[j]));
-                            }
-                        }
-                        pairs
-                            .iter()
-                            .map(|(a, b)| {
-                                ordering_rules
-                                    .iter()
-                                    .filter_map(|(first, second)| {
-                                        if a == first && b == second {
-                                            Some(true)
-                                        } else if b == first && a == second {
-                                            Some(false)
-                                        } else {
-                                            None
-                                        }
-                                    })
-                                    .all(|x| x)
-                            })
-                            .all(|x| x)
-                    })
-                    .cloned()
-                    .collect::<Vec<Vec<i32>>>()
-            })
-            .map(|vector| vector[0].clone())
-            .collect();
-        // println!("Reordered vector: {:?}", reordered_vector);
+        let reordered_vector = reorder_list(unvalid_vector, ordering_rules);
         let result: i32 = reordered_vector.iter().map(|vec| vec[vec.len() / 2]).sum();
-        println!("Solution Part 1: {}", result);
+        println!("Solution Part 2: {}", result);
     }
 }
