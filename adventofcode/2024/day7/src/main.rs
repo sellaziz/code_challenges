@@ -5,6 +5,40 @@ use std::io;
 use std::io::BufRead;
 use std::process::exit;
 
+fn generate_combinations(
+    numbers: &Vec<u64>,
+    idx: usize,
+    current_result: u64,
+    target: u64,
+    found: &mut bool,
+) {
+    if idx == numbers.len() {
+        // If we have processed all numbers, check if the result matches the target
+        if current_result == target {
+            *found = true;
+        }
+        return;
+    }
+
+    // Try addition
+    generate_combinations(
+        &numbers,
+        idx + 1,
+        current_result + numbers[idx],
+        target,
+        found,
+    );
+
+    // Try multiplication
+    generate_combinations(
+        &numbers,
+        idx + 1,
+        current_result * numbers[idx],
+        target,
+        found,
+    );
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     let valid_args: HashSet<&str> = ["part1", "part2"].iter().cloned().collect();
@@ -26,21 +60,30 @@ fn main() {
 
     let list: Vec<String> = reader.lines().map_while(Result::ok).collect();
 
-    let equations: Vec<(i32, Vec<i32>)> = list
+    let equations: Vec<(u64, Vec<u64>)> = list
         .iter()
         .map(|line| {
             let (res, nums_str) = line.split_once(':').unwrap();
             let nums = String::from(nums_str)
                 .split(" ")
-                .filter_map(|value| value.parse::<i32>().ok())
+                .filter_map(|value| value.parse::<u64>().ok())
                 .collect();
-            (res.parse::<i32>().unwrap(), nums)
+            (res.parse::<u64>().unwrap(), nums)
         })
         .collect();
 
-    println!("Equations: {:?}", equations);
+    // println!("Equations: {:?}", equations);
 
     if part == "part1" {
+        let mut valid_eq: Vec<u64> = Vec::new();
+        for (res, nums) in equations.iter() {
+            let mut found = false;
+            generate_combinations(nums, 1, nums[0], *res, &mut found);
+            if found {
+                valid_eq.push(*res);
+            }
+        }
+        println!("Solution Part1: {}", valid_eq.iter().sum::<u64>());
     } else if part == "part2" {
     }
 }
