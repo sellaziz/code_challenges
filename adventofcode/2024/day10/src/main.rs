@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::collections::HashSet;
 use std::env;
 use std::fmt::Display;
@@ -14,56 +13,46 @@ fn print_map<T: Display>(input: &Vec<Vec<T>>) {
     })
 }
 
-fn neighbors(
-    numbers: &Vec<Vec<u32>>,
-    x: usize,
-    y: usize,
-    max_x: usize,
-    max_y: usize,
-) -> Vec<(usize, usize)> {
-    let potential_neighbors: Vec<(i32, i32)> = vec![
-        (x as i32 - 1, y as i32),
-        (x as i32, y as i32 - 1),
-        (x as i32 + 1, y as i32),
-        (x as i32, y as i32 + 1),
-    ];
-    potential_neighbors
-        .iter()
-        .filter(|&&(i, j)| i < max_x as i32 && i >= 0 && j < max_y as i32 && j >= 0)
-        .filter(|&&(i, j)| numbers[j as usize][i as usize] == numbers[y][x] + 1)
-        .map(|&(i, j)| (i as usize, j as usize))
-        .collect()
-}
-fn find_trail(
-    numbers: &Vec<Vec<u32>>,
-    x: usize,
-    y: usize,
-    max_x: usize,
-    max_y: usize,
-    current_trail: &mut Vec<(usize, usize)>,
-    trails: &mut Vec<Vec<(usize, usize)>>,
-) {
-    let potential_neighbors = neighbors(numbers, x, y, max_x, max_y);
-    if potential_neighbors.is_empty() && current_trail.len() == 10 {
-        trails.push(current_trail.clone());
-    } else if potential_neighbors.is_empty() {
-        return;
-    } else {
-        // println!("crrent: {:?}", current_trail);
-        // println!("potential :{:?}", potential_neighbors);
-        potential_neighbors.iter().for_each(|&(i, j)| {
-            let mut new_trail = current_trail.clone();
-            // println!("---");
-            // let mut vec_of_vec: Vec<Vec<char>> = vec![vec!['.'; numbers.len()]; numbers[0].len()];
-            //
-            // new_trail.iter().for_each(|&(i, j)| {
-            //     vec_of_vec[j][i] = char::from_digit(numbers[j][i], 10).unwrap()
-            // });
-            // print_map(&vec_of_vec);
-            new_trail.push((i, j));
-            find_trail(numbers, i, j, max_x, max_y, &mut new_trail, trails)
-        })
+fn score(grid: &Vec<Vec<u32>>, r: usize, c: usize) -> i32 {
+    let (rows, columns) = (grid.len(), grid[0].len());
+    let mut queue = vec![(r, c)];
+    let mut seen: HashSet<(usize, usize)> = HashSet::from([(r, c)]);
+    let mut summits = 0;
+
+    while !queue.is_empty() {
+        let dq = queue.pop();
+        if dq.is_some() {
+            let (cr, cc) = (dq.unwrap().0, dq.unwrap().1);
+            for &(nr, nc) in [
+                (cr as i32 - 1, cc as i32),
+                (cr as i32, cc as i32 - 1),
+                (cr as i32 + 1, cc as i32),
+                (cr as i32, cc as i32 + 1),
+            ]
+            .iter()
+            {
+                if nr < 0 || nc < 0 || nr >= rows as i32 || nc >= columns as i32 {
+                    continue;
+                }
+                if grid[nr as usize][nc as usize] != grid[cr][cc] + 1 {
+                    continue;
+                }
+                if seen.contains(&(nr as usize, nc as usize)) {
+                    continue;
+                } else {
+                    seen.insert((nr as usize, nc as usize));
+                }
+                if grid[nr as usize][nc as usize] == 9 {
+                    summits += 1;
+                } else {
+                    queue.push((nr as usize, nc as usize));
+                }
+            }
+        } else {
+            continue;
+        }
     }
+    summits
 }
 
 fn main() {
@@ -95,56 +84,21 @@ fn main() {
     print_map(&number_list);
 
     if part == "part1" {
-        let mut trails: Vec<Vec<(usize, usize)>> = Vec::new();
-        number_list.iter().enumerate().for_each(|(j, line)| {
-            line.iter().enumerate().for_each(|(i, v)| {
-                if *v == 0 {
-                    let mut new_trail = vec![(i, j)];
-                    find_trail(
-                        &number_list,
-                        i,
-                        j,
-                        line.len(),
-                        number_list.len(),
-                        &mut new_trail,
-                        &mut trails,
-                    );
-                }
+        let trailheads: Vec<(usize, usize)> = number_list
+            .iter()
+            .enumerate()
+            .flat_map(|(r, line)| {
+                line.iter()
+                    .enumerate()
+                    .filter_map(move |(c, value)| if *value == 0 { Some((r, c)) } else { None })
             })
-        });
-        println!("{:?}", trails);
-        println!("{:?}", trails.len());
-        trails.iter().for_each(|v| {
-            println!("---");
-            let mut vec_of_vec: Vec<Vec<char>> =
-                vec![vec!['.'; number_list.len()]; number_list[0].len()];
-
-            v.iter().for_each(|&(i, j)| {
-                vec_of_vec[j][i] = char::from_digit(number_list[j][i], 10).unwrap()
-            });
-            print_map(&vec_of_vec);
-        });
-        let mut total = 0;
-        let mut trailheads: HashMap<(usize, usize), i32> = HashMap::new();
-        number_list.iter().enumerate().for_each(|(j, line)| {
-            line.iter().enumerate().for_each(|(i, v)| {
-                if *v == 0 {
-                    let init_trail = (i, j);
-                    let mut count = 0;
-                    trails.iter().for_each(|trail| {
-                        if init_trail == trail[0] {
-                            count += 1;
-                        }
-                    });
-                    if count != 0 {
-                        trailheads.insert(init_trail, count);
-                    }
-                    total += count;
-                }
-            })
-        });
-        println!("trailheads: {:?}", trailheads);
-        println!("Solution part 1: {}", total);
+            .collect();
+        println!("trailheads : {:?}", trailheads);
+        let total: i32 = trailheads
+            .iter()
+            .map(|(r, c)| score(&number_list, *r, *c))
+            .sum();
+        println!("Solution part1: {}", total);
     } else if part == "part2" {
     }
 }
