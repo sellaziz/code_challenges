@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::collections::HashSet;
 use std::env;
 use std::fmt::Display;
@@ -11,6 +12,50 @@ fn print_map<T: Display>(input: &Vec<Vec<T>>) {
         vector.iter().for_each(|v| print!("{}", v));
         println!();
     })
+}
+
+fn neighbors(
+    numbers: &Vec<Vec<u32>>,
+    x: usize,
+    y: usize,
+    max_x: usize,
+    max_y: usize,
+) -> Vec<(usize, usize)> {
+    let potential_neighbors: Vec<(i32, i32)> = vec![
+        (x as i32 - 1, y as i32),
+        (x as i32, y as i32 - 1),
+        (x as i32 + 1, y as i32),
+        (x as i32, y as i32 + 1),
+    ];
+    potential_neighbors
+        .iter()
+        .filter(|&&(i, j)| i < max_x as i32 && i >= 0 && j < max_y as i32 && j >= 0)
+        .filter(|&&(i, j)| numbers[j as usize][i as usize] == numbers[y][x] + 1)
+        .map(|&(i, j)| (i as usize, j as usize))
+        .collect()
+}
+
+fn find_trail(
+    numbers: &Vec<Vec<u32>>,
+    x: usize,
+    y: usize,
+    max_x: usize,
+    max_y: usize,
+    current_trail: &mut Vec<(usize, usize)>,
+    trails: &mut Vec<Vec<(usize, usize)>>,
+) {
+    let potential_neighbors = neighbors(numbers, x, y, max_x, max_y);
+    if potential_neighbors.is_empty() && current_trail.len() == 10 {
+        trails.push(current_trail.clone());
+    } else if potential_neighbors.is_empty() {
+        return;
+    } else {
+        potential_neighbors.iter().for_each(|&(i, j)| {
+            let mut new_trail = current_trail.clone();
+            new_trail.push((i, j));
+            find_trail(numbers, i, j, max_x, max_y, &mut new_trail, trails)
+        })
+    }
 }
 
 fn score(grid: &Vec<Vec<u32>>, r: usize, c: usize) -> i32 {
@@ -80,8 +125,8 @@ fn main() {
         .map(|line| line.chars().filter_map(|v| v.to_digit(10)).collect())
         .collect();
 
-    println!("Number List: {:?}", number_list);
-    print_map(&number_list);
+    // println!("Number List: {:?}", number_list);
+    // print_map(&number_list);
 
     if part == "part1" {
         let trailheads: Vec<(usize, usize)> = number_list
@@ -100,5 +145,55 @@ fn main() {
             .sum();
         println!("Solution part1: {}", total);
     } else if part == "part2" {
+        let mut trails: Vec<Vec<(usize, usize)>> = Vec::new();
+        number_list.iter().enumerate().for_each(|(j, line)| {
+            line.iter().enumerate().for_each(|(i, v)| {
+                if *v == 0 {
+                    let mut new_trail = vec![(i, j)];
+                    find_trail(
+                        &number_list,
+                        i,
+                        j,
+                        line.len(),
+                        number_list.len(),
+                        &mut new_trail,
+                        &mut trails,
+                    );
+                }
+            })
+        });
+        // println!("{:?}", trails);
+        // println!("{:?}", trails.len());
+        // trails.iter().for_each(|v| {
+        //     println!("---");
+        //     let mut vec_of_vec: Vec<Vec<char>> =
+        //         vec![vec!['.'; number_list.len()]; number_list[0].len()];
+        //
+        //     v.iter().for_each(|&(i, j)| {
+        //         vec_of_vec[j][i] = char::from_digit(number_list[j][i], 10).unwrap()
+        //     });
+        //     print_map(&vec_of_vec);
+        // });
+        let mut total = 0;
+        let mut trailheads: HashMap<(usize, usize), i32> = HashMap::new();
+        number_list.iter().enumerate().for_each(|(j, line)| {
+            line.iter().enumerate().for_each(|(i, v)| {
+                if *v == 0 {
+                    let init_trail = (i, j);
+                    let mut count = 0;
+                    trails.iter().for_each(|trail| {
+                        if init_trail == trail[0] {
+                            count += 1;
+                        }
+                    });
+                    if count != 0 {
+                        trailheads.insert(init_trail, count);
+                    }
+                    total += count;
+                }
+            })
+        });
+        // println!("trailheads: {:?}", trailheads);
+        println!("Solution part 2: {}", total);
     }
 }
